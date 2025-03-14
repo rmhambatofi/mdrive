@@ -69,3 +69,13 @@ def profile():
         'id': user.id,
         'username': user.username
     }), 200
+
+
+@auth.route('/logout', methods=['POST'])
+@jwt_required()
+def logout():
+    """Logout user"""
+    # In a production environment, you would typically add the token to a blocklist
+    # or implement token revocation using Flask-JWT-Extended's token_in_blocklist_loader
+    # For now, we'll just return a success message
+    return jsonify({'message': 'Successfully logged out'}), 200
