@@ -1,0 +1,609 @@
+openapi: 3.0.0
+info:
+  title: MDrive API
+  description: |
+    API documentation for MDrive, a file storage service.
+    This API allows users to manage their files and folders, including uploading, downloading, and organizing content.
+  version: 1.0.0
+  contact:
+    name: MDrive Support
+
+servers:
+  - url: http://localhost:5001/api
+    description: Local development server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Error message
+          example: "File not found"
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the user
+        username:
+          type: string
+          description: Username for login
+        email:
+          type: string
+          format: email
+          description: User's email address
+        firstname:
+          type: string
+          description: User's first name
+        lastname:
+          type: string
+          description: User's last name
+        created_at:
+          type: string
+          format: date-time
+          description: When the user was created
+        updated_at:
+          type: string
+          format: date-time
+          description: When the user was last updated
+
+    UserRegistration:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          description: Username for login
+          example: "johndoe"
+        password:
+          type: string
+          format: password
+          description: User password
+          example: "securepassword123"
+        email:
+          type: string
+          format: email
+          description: User's email address
+          example: "john.doe@example.com"
+        firstname:
+          type: string
+          description: User's first name
+          example: "John"
+        lastname:
+          type: string
+          description: User's last name
+          example: "Doe"
+
+    UserLogin:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          description: Username for login
+          example: "johndoe"
+        password:
+          type: string
+          format: password
+          description: User password
+          example: "securepassword123"
+
+    LoginResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Status message
+          example: "Login successful"
+        access_token:
+          type: string
+          description: JWT access token
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        user_id:
+          type: string
+          format: uuid
+          description: User ID
+        username:
+          type: string
+          description: Username
+        token_expires_in:
+          type: object
+          properties:
+            seconds:
+              type: integer
+              description: Token expiration in seconds
+              example: 3600
+            hours:
+              type: integer
+              description: Token expiration in hours
+              example: 1
+
+    File:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the file
+        name:
+          type: string
+          description: File name
+        extension:
+          type: string
+          description: File extension
+        size:
+          type: integer
+          description: File size in bytes
+        mime_type:
+          type: string
+          description: MIME type of the file
+        folder_id:
+          type: string
+          format: uuid
+          description: ID of the folder containing this file
+        created_at:
+          type: string
+          format: date-time
+          description: When the file was created
+        updated_at:
+          type: string
+          format: date-time
+          description: When the file was last updated
+        is_deleted:
+          type: boolean
+          description: Whether the file is deleted
+        is_favorite:
+          type: boolean
+          description: Whether the file is marked as favorite
+
+    Folder:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the folder
+        name:
+          type: string
+          description: Folder name
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID of the parent folder
+        created_at:
+          type: string
+          format: date-time
+          description: When the folder was created
+        updated_at:
+          type: string
+          format: date-time
+          description: When the folder was last updated
+        is_deleted:
+          type: boolean
+          description: Whether the folder is deleted
+        path:
+          type: string
+          description: Full path to the folder
+        size:
+          type: integer
+          description: Total size of the folder contents in bytes
+
+    FolderContents:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the folder
+        name:
+          type: string
+          description: Folder name
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID of the parent folder
+        created_at:
+          type: string
+          format: date-time
+          description: When the folder was created
+        updated_at:
+          type: string
+          format: date-time
+          description: When the folder was last updated
+        is_deleted:
+          type: boolean
+          description: Whether the folder is deleted
+        path:
+          type: string
+          description: Full path to the folder
+        size:
+          type: integer
+          description: Total size of the folder contents in bytes
+        subfolders:
+          type: array
+          items:
+            $ref: '#/components/schemas/Folder'
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/File'
+
+    FolderCreate:
+      type: object
+      required:
+        - folder_name
+      properties:
+        folder_name:
+          type: string
+          description: Name for the new folder
+          example: "Documents"
+        parent_id:
+          type: string
+          format: uuid
+          description: ID of the parent folder
+          example: "123e4567-e89b-12d3-a456-426614174000"
+
+    FileRename:
+      type: object
+      required:
+        - new_name
+      properties:
+        new_name:
+          type: string
+          description: New name for the file or folder
+          example: "new_filename.txt"
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      description: Create a new user account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistration'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User created successfully"
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login to the system
+      description: Authenticate and get access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLogin'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/profile:
+    get:
+      tags:
+        - Authentication
+      summary: Get user profile
+      description: Get current user profile information
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout user
+      description: Logout current user
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Logout successful"
+
+  /files/upload:
+    post:
+      tags:
+        - Files
+      summary: Upload a file
+      description: Upload a file to the user's storage
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: File to upload
+                folder_id:
+                  type: string
+                  format: uuid
+                  description: ID of the folder to upload to
+                comment:
+                  type: string
+                  description: Comment for file version
+              required:
+                - file
+      responses:
+        '200':
+          description: File updated successfully (new version)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                  size:
+                    type: integer
+                  version:
+                    type: integer
+                  folder_id:
+                    type: string
+                    format: uuid
+                  updated_at:
+                    type: string
+                    format: date-time
+                  message:
+                    type: string
+        '201':
+          description: File uploaded successfully (new file)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                  extension:
+                    type: string
+                  size:
+                    type: integer
+                  folder_id:
+                    type: string
+                    format: uuid
+                  created_at:
+                    type: string
+                    format: date-time
+                  message:
+                    type: string
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Folder not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /files/{file_id}:
+    get:
+      tags:
+        - Files
+      summary: Download a file
+      description: Download a file by ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: file_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: ID of the file to download
+      responses:
+        '200':
+          description: File content
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags:
+        - Files
+      summary: Delete a file
+      description: Delete a file by ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: file_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: ID of the file to delete
+      responses:
+        '200':
+          description: File deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "File deleted successfully"
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /files/{file_id}/rename:
+    put:
+      tags:
+        - Files
+      summary: Rename a file
+      description: Rename a file by ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: file_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: ID of the file to rename
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FileRename'
+      responses:
+        '200':
+          description: File renamed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "File renamed successfully"
+                  file:
+                    $ref: '#/components/schemas/File'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /files/folder:
+    post:
