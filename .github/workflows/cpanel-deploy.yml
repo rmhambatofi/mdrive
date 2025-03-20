@@ -36,6 +36,12 @@ jobs:
       with:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         known_hosts: ${{ secrets.KNOWN_HOSTS }}
+        config: |
+          Host cpanel
+            HostName ${{ secrets.SSH_HOST }}
+            User ${{ secrets.SSH_USER }}
+            IdentityFile ~/.ssh/github-actions-deploy
+            StrictHostKeyChecking yes
     
     - name: Create deployment package
       run: |
@@ -61,8 +67,8 @@ jobs:
     
     - name: Deploy to CPanel
       run: |
-        scp deployment.zip ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/
-        ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} '
+        scp deployment.zip cpanel:~/
+        ssh cpanel '
           rm -rf ~/mdrive
           mkdir -p ~/mdrive
           unzip ~/deployment.zip -d ~/mdrive
