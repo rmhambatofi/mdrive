@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  db:
+    image: mysql:8.0
+    container_name: mdrive-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: mdrive
+      MYSQL_USER: mdrive_user
+      MYSQL_PASSWORD: mdrive_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - mdrive-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Flask Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mdrive-backend
+    restart: always
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: mdrive
+      DB_USER: mdrive_user
+      DB_PASSWORD: mdrive_password
+      JWT_SECRET_KEY: your-super-secret-jwt-key-change-in-production
+      FLASK_ENV: production
+      SECRET_KEY: your-flask-secret-key-change-in-production
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend/userdata:/app/userdata
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - mdrive-network
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: mdrive-frontend
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - mdrive-network
+
+volumes:
+  mysql_data:
+
+networks:
+  mdrive-network:
+    driver: bridge
