@@ -49,7 +49,7 @@ touch "$BACKEND_DEST/tmp/restart.txt"
 
 log "==> [FRONTEND] Installation des dépendances Node.js..."
 source "$HOME_DIR/nodevenv/repositories/mdrive/frontend/20/bin/activate" && cd "$FRONTEND_SRC"
-npm install --prefer-offline
+npm install
 
 log "==> [FRONTEND] Build de l'application React..."
 npm run build
@@ -58,6 +58,6 @@ log "==> [FRONTEND] Synchronisation du build vers $FRONTEND_DEST..."
 rsync -a --delete "$FRONTEND_SRC/dist/" "$FRONTEND_DEST/"
 
 log "==> [FRONTEND] Déploiement du .htaccess..."
-cp "$FRONTEND_SRC/.htaccess" "$FRONTEND_DEST/.htaccess"
+cp "$FRONTEND_SRC/.htaccess.production" "$FRONTEND_DEST/.htaccess"
 
 log "==> Déploiement terminé avec succès."
