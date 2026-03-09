@@ -1,0 +1,39 @@
+---
+deployment:
+  tasks:
+    # ── Variables ────────────────────────────────────────────────────────────
+    - export HOME_DIR="$HOME"
+    - export REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
+    - export PIP="$HOME_DIR/virtualenv/mdrive/3.11/bin/pip"
+    - export PYTHON="$HOME_DIR/virtualenv/mdrive/3.11/bin/python"
+    - export BACKEND_SRC="$REPO_DIR/backend"
+    - export BACKEND_DEST="$HOME_DIR/mdrive"
+    - export FRONTEND_SRC="$REPO_DIR/frontend"
+    - export FRONTEND_DEST="$HOME_DIR/drive.manitra.fr"
+
+    # ── BACKEND ──────────────────────────────────────────────────────────────
+
+    # 1. Installer les dépendances Python
+    - echo "[BACKEND] Installation des dépendances Python..." && "$PIP" install -r "$BACKEND_SRC/requirements.txt" --quiet
+
+    # 2. Synchroniser le code source backend vers ~/mdrive/
+    - echo "[BACKEND] Synchronisation vers $BACKEND_DEST..." && rsync -a --delete --exclude='.env' --exclude='.htaccess' --exclude='userdata/' --exclude='venv/' --exclude='__pycache__' --exclude='*.pyc' --exclude='logs/' "$BACKEND_SRC/" "$BACKEND_DEST/"
+
+    # 3. Redémarrer l'application Flask (Passenger)
+    - echo "[BACKEND] Redémarrage Passenger..." && mkdir -p "$BACKEND_DEST/tmp" && touch "$BACKEND_DEST/tmp/restart.txt"
+
+    # ── FRONTEND ─────────────────────────────────────────────────────────────
+
+    # 4. Activer Node.js et installer les dépendances
+    - echo "[FRONTEND] Installation des dépendances Node.js..." && source "$HOME_DIR/nodevenv/repositories/mdrive/frontend/20/bin/activate" && cd "$FRONTEND_SRC" && npm install
+
+    # 5. Builder l'application React
+    - echo "[FRONTEND] Build React..." && source "$HOME_DIR/nodevenv/repositories/mdrive/frontend/20/bin/activate" && cd "$FRONTEND_SRC" && npm run build
+
+    # 6. Synchroniser le build vers ~/drive.manitra.fr/
+    - echo "[FRONTEND] Synchronisation vers $FRONTEND_DEST..." && rsync -a --delete "$FRONTEND_SRC/dist/" "$FRONTEND_DEST/"
+
+    # 7. Déployer le .htaccess pour le routing SPA
+    - echo "[FRONTEND] Déploiement .htaccess..." && cp "$FRONTEND_SRC/.htaccess.production" "$FRONTEND_DEST/.htaccess"
+
+    - echo "==> Déploiement terminé avec succès."
