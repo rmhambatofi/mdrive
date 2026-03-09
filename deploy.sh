@@ -6,7 +6,7 @@ set -euo pipefail
 # Appelé par .cpanel.yml lors d'un git pull
 # ============================================================
 
-HOME_DIR="/home/rama7388"
+HOME_DIR="$HOME"
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 PIP="$HOME_DIR/virtualenv/mdrive/3.11/bin/pip"
@@ -38,8 +38,8 @@ rsync -a --delete \
   --exclude='logs/' \
   "$BACKEND_SRC/" "$BACKEND_DEST/"
 
-log "==> [BACKEND] Application des migrations..."
-FLASK_APP=run.py "$PYTHON" -m flask db upgrade --directory "$BACKEND_DEST/migrations"
+#log "==> [BACKEND] Application des migrations..."
+#FLASK_APP=run.py "$PYTHON" -m flask db upgrade --directory "$BACKEND_DEST/migrations"
 
 log "==> [BACKEND] Redémarrage de l'application Passenger..."
 mkdir -p "$BACKEND_DEST/tmp"
@@ -48,7 +48,7 @@ touch "$BACKEND_DEST/tmp/restart.txt"
 # ── FRONTEND ─────────────────────────────────────────────────
 
 log "==> [FRONTEND] Installation des dépendances Node.js..."
-cd "$FRONTEND_SRC"
+source "$HOME_DIR/nodevenv/repositories/mdrive/frontend/20/bin/activate" && cd "$FRONTEND_SRC"
 npm install --prefer-offline
 
 log "==> [FRONTEND] Build de l'application React..."
