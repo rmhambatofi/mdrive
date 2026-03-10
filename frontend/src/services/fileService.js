@@ -94,6 +94,31 @@ const fileService = {
   },
 
   /**
+   * Download multiple files/folders as a single ZIP archive
+   * Filename format: mdrive-YYYYMMDD-HHmmss.zip
+   */
+  downloadZip: async (fileIds) => {
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const zipName = `mdrive-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.zip`;
+
+    const response = await api.post(
+      '/files/download-zip',
+      { file_ids: fileIds },
+      { responseType: 'blob' }
+    );
+
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', zipName);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
+  /**
    * Rename a file or folder
    */
   renameFile: async (fileId, newName) => {

@@ -23,6 +23,11 @@ RewriteRule ^api/(.*)$ /mdrive/$1 [P,L]
 # RewriteCond %{REQUEST_FILENAME} !-d
 # RewriteRule . /index.html [L]
 
+Options -MultiViews
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^ index.html [QSA,L]
+
 # ===========================================
 # COMPRESSION
 # ===========================================

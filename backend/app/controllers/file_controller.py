@@ -4,6 +4,7 @@ Handles HTTP requests for file operations.
 """
 import os
 from flask import request, jsonify, send_file, current_app
+from datetime import datetime
 from werkzeug.utils import safe_join
 from app.services.file_service import FileService
 from app.services.storage_service import StorageService
@@ -241,6 +242,50 @@ class FileController:
         except Exception as e:
             current_app.logger.error(f"Rename endpoint error: {str(e)}")
             return jsonify({'error': 'Rename failed', 'details': str(e)}), 500
+
+    @staticmethod
+    @jwt_required_custom
+    def download_zip(user):
+        """
+        Create and download a ZIP archive of the specified files/folders.
+
+        Requires: JWT token in Authorization header
+        Expected JSON body:
+            {
+                "file_ids": ["uuid1", "uuid2", ...]
+            }
+
+        Returns:
+            ZIP file stream
+        """
+        try:
+            data = request.get_json()
+
+            if not data or not data.get('file_ids'):
+                return jsonify({'error': 'No file IDs provided'}), 400
+
+            file_uuids = data['file_ids']
+
+            if not isinstance(file_uuids, list) or len(file_uuids) == 0:
+                return jsonify({'error': 'file_ids must be a non-empty list'}), 400
+
+            success, result, status_code = FileService.create_zip(user, file_uuids)
+
+            if not success:
+                return jsonify(result), status_code
+
+            zip_name = f"mdrive-{datetime.now().strftime('%Y%m%d-%H%M%S')}.zip"
+
+            return send_file(
+                result,
+                mimetype='application/zip',
+                as_attachment=True,
+                download_name=zip_name
+            )
+
+        except Exception as e:
+            current_app.logger.error(f"Download ZIP endpoint error: {str(e)}")
+            return jsonify({'error': 'ZIP download failed', 'details': str(e)}), 500
 
     @staticmethod
     @jwt_required_custom

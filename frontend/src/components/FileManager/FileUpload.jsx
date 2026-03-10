@@ -5,8 +5,10 @@
 import React, { useState, useRef } from 'react';
 import { X, Upload, CheckCircle, AlertCircle } from 'lucide-react';
 import fileService from '../../services/fileService';
+import { useAuth } from '../../contexts/AuthContext';
 
 const FileUpload = ({ isOpen, onClose, onUploadComplete, currentFolderId }) => {
+  const { refreshUser } = useAuth();
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -98,6 +100,7 @@ const FileUpload = ({ isOpen, onClose, onUploadComplete, currentFolderId }) => {
     }
 
     setUploading(false);
+    await refreshUser();
     onUploadComplete();
   };
 

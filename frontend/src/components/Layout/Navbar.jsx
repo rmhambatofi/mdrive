@@ -18,8 +18,15 @@ const Navbar = ({ onMenuClick }) => {
   };
 
   const formatStorage = (bytes) => {
-    const gb = bytes / (1024 * 1024 * 1024);
-    return gb.toFixed(2);
+    if (bytes < 1024) {
+      return `${bytes} B`;
+    } else if (bytes < 1024 * 1024) {
+      return `${(bytes / 1024).toFixed(2)} KB`;
+    } else if (bytes < 1024 * 1024 * 1024) {
+      return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+    } else {
+      return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+    }
   };
 
   return (
@@ -40,10 +47,27 @@ const Navbar = ({ onMenuClick }) => {
 
       <div className="flex items-center space-x-4">
         {user && (
-          <div className="hidden md:flex items-center space-x-2 text-sm text-gray-600">
-            <span>
-              {formatStorage(user.storage_used)} / {formatStorage(user.storage_quota)} GB
-            </span>
+          <div className="hidden md:flex flex-col space-y-1 min-w-36">
+            <div className="flex justify-between text-xs text-gray-500">
+              <span>{formatStorage(user.storage_used)} / {formatStorage(user.storage_quota)}</span>
+              <span className={`font-medium ${
+                user.storage_used / user.storage_quota >= 0.9 ? 'text-red-500' :
+                user.storage_used / user.storage_quota >= 0.7 ? 'text-orange-500' :
+                'text-gray-500'
+              }`}>
+                {((user.storage_used / user.storage_quota) * 100).toFixed(1)}%
+              </span>
+            </div>
+            <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${
+                  user.storage_used / user.storage_quota >= 0.9 ? 'bg-red-500' :
+                  user.storage_used / user.storage_quota >= 0.7 ? 'bg-orange-400' :
+                  'bg-blue-500'
+                }`}
+                style={{ width: `${Math.min((user.storage_used / user.storage_quota) * 100, 100)}%` }}
+              />
+            </div>
           </div>
         )}
 

@@ -55,6 +55,15 @@ export const AuthProvider = ({ children }) => {
     setUser(userData);
   };
 
+  const refreshUser = async () => {
+    try {
+      const data = await authService.getProfile();
+      setUser(data.user);
+    } catch (error) {
+      // silently ignore — token may have expired (interceptor will redirect)
+    }
+  };
+
   const value = {
     user,
     loading,
@@ -62,6 +71,7 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     updateUser,
+    refreshUser,
     isAuthenticated: !!user,
   };
 

@@ -1,6 +1,7 @@
 /**
  * FileList Component
- * Displays files and folders in a list/grid view
+ * Displays files and folders in a grid view with multi-selection support.
+ * Selection state is managed by the parent (Dashboard).
  */
 import React, { useState } from 'react';
 import {
@@ -11,160 +12,137 @@ import {
   Music,
   Video,
   Archive,
-  MoreVertical,
-  Download,
-  Trash2,
   Edit,
+  Check,
 } from 'lucide-react';
 import fileService from '../../services/fileService';
 
-const FileList = ({ files, onFileClick, onRefresh }) => {
-  const [contextMenu, setContextMenu] = useState(null);
-  const [selectedFile, setSelectedFile] = useState(null);
+const FileList = ({ files, selectedIds, onToggleSelect, onFileClick, onRefresh }) => {
+  const [hoveredId, setHoveredId] = useState(null);
+  const [renamingFile, setRenamingFile] = useState(null);
+  const [renameValue, setRenameValue] = useState('');
 
   const getFileIcon = (file) => {
     if (file.is_folder) {
-      return <Folder className="w-8 h-8 text-blue-500" />;
+      return <Folder className="w-10 h-10 text-yellow-400" />;
     }
-
     const iconMap = {
-      image: <Image className="w-8 h-8 text-green-500" />,
-      video: <Video className="w-8 h-8 text-purple-500" />,
-      audio: <Music className="w-8 h-8 text-pink-500" />,
-      pdf: <FileText className="w-8 h-8 text-red-500" />,
-      document: <FileText className="w-8 h-8 text-blue-500" />,
-      archive: <Archive className="w-8 h-8 text-yellow-500" />,
-      text: <FileText className="w-8 h-8 text-gray-500" />,
+      image: <Image className="w-10 h-10 text-green-500" />,
+      video: <Video className="w-10 h-10 text-purple-500" />,
+      audio: <Music className="w-10 h-10 text-pink-500" />,
+      pdf: <FileText className="w-10 h-10 text-red-500" />,
+      document: <FileText className="w-10 h-10 text-blue-500" />,
+      archive: <Archive className="w-10 h-10 text-yellow-600" />,
+      text: <FileText className="w-10 h-10 text-gray-500" />,
     };
-
-    return iconMap[file.icon] || <File className="w-8 h-8 text-gray-500" />;
+    return iconMap[file.icon] || <File className="w-10 h-10 text-gray-500" />;
   };
 
-  const handleContextMenu = (e, file) => {
-    e.preventDefault();
-    setSelectedFile(file);
-    setContextMenu({ x: e.clientX, y: e.clientY });
-  };
-
-  const closeContextMenu = () => {
-    setContextMenu(null);
-    setSelectedFile(null);
-  };
-
-  const handleDownload = async () => {
-    if (selectedFile && !selectedFile.is_folder) {
-      try {
-        await fileService.downloadFile(selectedFile.id, selectedFile.file_name);
-      } catch (error) {
-        alert('Failed to download file');
-      }
+  const handleCardClick = (file) => {
+    if (selectedIds.size > 0) {
+      onToggleSelect(file.id);
+    } else if (file.is_folder) {
+      onFileClick(file);
     }
-    closeContextMenu();
   };
 
-  const handleDelete = async () => {
-    if (selectedFile && window.confirm(`Are you sure you want to delete "${selectedFile.file_name}"?`)) {
+  const startRename = (e, file) => {
+    e.stopPropagation();
+    setRenamingFile(file);
+    setRenameValue(file.file_name);
+  };
+
+  const confirmRename = async () => {
+    if (renameValue && renameValue !== renamingFile.file_name) {
       try {
-        await fileService.deleteFile(selectedFile.id);
+        await fileService.renameFile(renamingFile.id, renameValue);
         onRefresh();
-      } catch (error) {
-        alert('Failed to delete file');
+      } catch {
+        alert('Failed to rename file');
       }
     }
-    closeContextMenu();
-  };
-
-  const handleRename = () => {
-    if (selectedFile) {
-      const newName = prompt('Enter new name:', selectedFile.file_name);
-      if (newName && newName !== selectedFile.file_name) {
-        fileService
-          .renameFile(selectedFile.id, newName)
-          .then(() => {
-            onRefresh();
-          })
-          .catch(() => {
-            alert('Failed to rename file');
-          });
-      }
-    }
-    closeContextMenu();
+    setRenamingFile(null);
   };
 
   return (
     <>
-      {contextMenu && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={closeContextMenu}
-        />
-      )}
+      {/* File grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+        {files.map((file) => {
+          const isSelected = selectedIds.has(file.id);
+          const isHovered = hoveredId === file.id;
+          const showCheckbox = isHovered || isSelected || selectedIds.size > 0;
 
-      {contextMenu && (
-        <div
-          className="fixed z-50 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[180px]"
-          style={{ left: contextMenu.x, top: contextMenu.y }}
-        >
-          {!selectedFile?.is_folder && (
-            <button
-              onClick={handleDownload}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center space-x-2"
+          return (
+            <div
+              key={file.id}
+              className={`relative rounded-xl p-3 cursor-pointer transition-all select-none
+                ${isSelected
+                  ? 'bg-blue-50 border-2 border-blue-400 shadow-sm'
+                  : 'bg-white border-2 border-transparent hover:border-gray-200 hover:shadow-md'
+                }`}
+              onClick={() => handleCardClick(file)}
+              onMouseEnter={() => setHoveredId(file.id)}
+              onMouseLeave={() => setHoveredId(null)}
             >
-              <Download className="w-4 h-4" />
-              <span>Download</span>
-            </button>
-          )}
-
-          <button
-            onClick={handleRename}
-            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center space-x-2"
-          >
-            <Edit className="w-4 h-4" />
-            <span>Rename</span>
-          </button>
-
-          <button
-            onClick={handleDelete}
-            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
-          >
-            <Trash2 className="w-4 h-4" />
-            <span>Delete</span>
-          </button>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {files.map((file) => (
-          <div
-            key={file.id}
-            className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition cursor-pointer group"
-            onClick={() => file.is_folder && onFileClick(file)}
-            onContextMenu={(e) => handleContextMenu(e, file)}
-          >
-            <div className="flex items-start justify-between mb-3">
-              {getFileIcon(file)}
-
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleContextMenu(e, file);
-                }}
-                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-100 rounded transition"
+              {/* Checkbox */}
+              <div
+                className={`absolute top-2 left-2 z-10 transition-opacity ${showCheckbox ? 'opacity-100' : 'opacity-0'}`}
+                onClick={(e) => { e.stopPropagation(); onToggleSelect(file.id); }}
               >
-                <MoreVertical className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors
+                  ${isSelected
+                    ? 'bg-blue-500 border-blue-500'
+                    : 'bg-white border-gray-400 hover:border-blue-400'
+                  }`}
+                >
+                  {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                </div>
+              </div>
 
-            <h3 className="font-medium text-gray-900 truncate mb-1" title={file.file_name}>
-              {file.file_name}
-            </h3>
+              {/* Rename button (hover, not selected) */}
+              {isHovered && !isSelected && (
+                <button
+                  className="absolute top-2 right-2 z-10 p-1 bg-white rounded-md shadow-sm hover:bg-gray-100 transition"
+                  onClick={(e) => startRename(e, file)}
+                  title="Rename"
+                >
+                  <Edit className="w-3.5 h-3.5 text-gray-500" />
+                </button>
+              )}
 
-            <div className="flex items-center justify-between text-xs text-gray-500">
-              <span>{file.is_folder ? 'Folder' : fileService.formatFileSize(file.file_size)}</span>
-              <span>{new Date(file.created_at).toLocaleDateString()}</span>
+              {/* Icon */}
+              <div className="flex justify-center mb-3 mt-2">
+                {getFileIcon(file)}
+              </div>
+
+              {/* Name */}
+              {renamingFile?.id === file.id ? (
+                <input
+                  autoFocus
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onBlur={confirmRename}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') confirmRename();
+                    if (e.key === 'Escape') setRenamingFile(null);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-full text-xs text-center border border-blue-400 rounded px-1 py-0.5 outline-none"
+                />
+              ) : (
+                <p className="text-xs font-medium text-gray-800 truncate text-center" title={file.file_name}>
+                  {file.file_name}
+                </p>
+              )}
+
+              {/* Meta */}
+              <p className="text-xs text-gray-400 text-center mt-1">
+                {file.is_folder ? 'Folder' : fileService.formatFileSize(file.file_size)}
+              </p>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {files.length === 0 && (

@@ -16,8 +16,8 @@ class Config:
     DB_HOST = os.getenv('DB_HOST', 'localhost')
     DB_PORT = os.getenv('DB_PORT', '3306')
     DB_NAME = os.getenv('DB_NAME', 'mdrive')
-    DB_USER = os.getenv('DB_USER', 'root')
-    DB_PASSWORD = os.getenv('DB_PASSWORD', '')
+    DB_USER = os.getenv('DB_USER', 'mdrive_user')
+    DB_PASSWORD = os.getenv('DB_PASSWORD', 'mdrive_password')
 
     SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -35,7 +35,8 @@ class Config:
     DEBUG = os.getenv('FLASK_ENV') == 'development'
 
     # File Upload Configuration
-    MAX_FILE_SIZE = int(os.getenv('MAX_FILE_SIZE', 104857600))  # 100MB
+    MAX_FILE_SIZE = int(os.getenv('MAX_FILE_SIZE', 2684354560))  # 2.5GB
+    MAX_CONTENT_LENGTH = MAX_FILE_SIZE  # Flask built-in request body limiter
     UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)),
                                   os.getenv('UPLOAD_FOLDER', 'userdata'))
     ALLOWED_EXTENSIONS = set(os.getenv('ALLOWED_EXTENSIONS',

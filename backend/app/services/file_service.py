@@ -3,6 +3,8 @@ File service module.
 Handles file and folder operations with database persistence.
 """
 import os
+import io
+import zipfile
 from flask import current_app
 from werkzeug.utils import secure_filename
 from app import db
@@ -395,3 +397,67 @@ class FileService:
             child.file_path = child.file_path.replace(old_path, new_path, 1)
             if child.is_folder:
                 FileService._update_children_paths(child, old_path, new_path)
+
+    @staticmethod
+    def create_zip(user, file_uuids: list) -> tuple:
+        """
+        Create a ZIP archive in memory containing the specified files and folders.
+
+        Args:
+            user (User): User object
+            file_uuids (list): List of file/folder UUIDs to include
+
+        Returns:
+            tuple: (success: bool, data: BytesIO|dict, status_code: int)
+        """
+        if not file_uuids:
+            return False, {'error': 'No files specified'}, 400
+
+        zip_buffer = io.BytesIO()
+
+        try:
+            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
+                for uuid in file_uuids:
+                    file_obj = File.query.filter_by(
+                        uuid=uuid, user_uuid=user.uuid
+                    ).first()
+
+                    if not file_obj:
+                        continue
+
+                    if file_obj.is_folder:
+                        FileService._add_folder_to_zip(zf, user, file_obj, file_obj.file_name)
+                    else:
+                        full_path = StorageService.get_full_path(user.uuid, file_obj.file_path)
+                        if os.path.exists(full_path):
+                            zf.write(full_path, file_obj.file_name)
+
+            zip_buffer.seek(0)
+            return True, zip_buffer, 200
+
+        except Exception as e:
+            current_app.logger.error(f"ZIP creation error: {str(e)}")
+            return False, {'error': 'Failed to create ZIP', 'details': str(e)}, 500
+
+    @staticmethod
+    def _add_folder_to_zip(zf: zipfile.ZipFile, user, folder, zip_path: str):
+        """Recursively add a folder and its contents to a ZipFile."""
+        children = File.query.filter_by(
+            user_uuid=user.uuid,
+            parent_folder_uuid=folder.uuid
+        ).all()
+
+        if not children:
+            # Preserve empty directory entry
+            dir_info = zipfile.ZipInfo(zip_path + '/')
+            zf.writestr(dir_info, '')
+            return
+
+        for child in children:
+            child_zip_path = zip_path + '/' + child.file_name
+            if child.is_folder:
+                FileService._add_folder_to_zip(zf, user, child, child_zip_path)
+            else:
+                full_path = StorageService.get_full_path(user.uuid, child.file_path)
+                if os.path.exists(full_path):
+                    zf.write(full_path, child_zip_path)

@@ -34,6 +34,12 @@ def download_file(file_uuid):
     return FileController.download_file(file_uuid)
 
 
+@file_bp.route('/download-zip', methods=['POST'])
+def download_zip():
+    """POST /api/files/download-zip - Download multiple files/folders as a ZIP"""
+    return FileController.download_zip()
+
+
 @file_bp.route('/<string:file_uuid>', methods=['DELETE'])
 def delete_file(file_uuid):
     """DELETE /api/files/<file_uuid> - Delete a file or folder"""
