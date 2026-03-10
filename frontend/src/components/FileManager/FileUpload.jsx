@@ -85,13 +85,19 @@ const FileUpload = ({ isOpen, onClose, onUploadComplete, currentFolderId }) => {
           )
         );
       } catch (error) {
+        const is413 =
+          error.response?.status === 413 ||
+          error.response?.data?.details?.includes('413');
+        const errorMessage = is413
+          ? `File too large. Maximum allowed size is ${fileService.formatFileSize(import.meta.env.VITE_MAX_FILE_SIZE)}.`
+          : error.response?.data?.error || 'Upload failed';
         setFiles((prev) =>
           prev.map((f, idx) =>
             idx === i
               ? {
                   ...f,
                   status: 'error',
-                  error: error.response?.data?.error || 'Upload failed',
+                  error: errorMessage,
                 }
               : f
           )
