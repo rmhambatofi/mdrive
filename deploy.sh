@@ -48,7 +48,7 @@ touch "$BACKEND_DEST/tmp/restart.txt"
 # ── FRONTEND ─────────────────────────────────────────────────
 
 log "==> [FRONTEND] Installation des dépendances Node.js..."
-source "$HOME_DIR/nodevenv/repositories/mdrive/frontend/20/bin/activate" && cd "$FRONTEND_SRC"
+cd "$FRONTEND_SRC"
 npm install
 
 log "==> [FRONTEND] Build de l'application React..."
