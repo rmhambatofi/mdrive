@@ -36,4 +36,6 @@ deployment:
     # 7. Déployer le .htaccess pour le routing SPA
     - echo "[FRONTEND] Déploiement .htaccess..." && cp "$FRONTEND_SRC/.htaccess.production" "$FRONTEND_DEST/.htaccess"
 
+    - rm -rf "$FRONTEND_SRC/tmp"
+
     - echo "==> Déploiement terminé avec succès."

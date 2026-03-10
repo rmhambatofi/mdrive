@@ -60,4 +60,6 @@ rsync -a --delete "$FRONTEND_SRC/dist/" "$FRONTEND_DEST/"
 log "==> [FRONTEND] Déploiement du .htaccess..."
 cp "$FRONTEND_SRC/.htaccess.production" "$FRONTEND_DEST/.htaccess"
 
+rm -rf "$FRONTEND_SRC/tmp"
+
 log "==> Déploiement terminé avec succès."
