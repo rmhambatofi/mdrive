@@ -25,10 +25,10 @@ deployment:
     # ── FRONTEND ─────────────────────────────────────────────────────────────
 
     # 4. Activer Node.js et installer les dépendances
-    - echo "[FRONTEND] Installation des dépendances Node.js..." && source "$HOME_DIR/nodevenv/repositories/mdrive/frontend/20/bin/activate" && cd "$FRONTEND_SRC" && npm install
+    - echo "[FRONTEND] Installation des dépendances Node.js..." && cd "$FRONTEND_SRC" && npm install
 
     # 5. Builder l'application React
-    - echo "[FRONTEND] Build React..." && source "$HOME_DIR/nodevenv/repositories/mdrive/frontend/20/bin/activate" && cd "$FRONTEND_SRC" && npm run build
+    - echo "[FRONTEND] Build React..." && cd "$FRONTEND_SRC" && npm run build
 
     # 6. Synchroniser le build vers ~/drive.manitra.fr/
     - echo "[FRONTEND] Synchronisation vers $FRONTEND_DEST..." && rsync -a --delete "$FRONTEND_SRC/dist/" "$FRONTEND_DEST/"
