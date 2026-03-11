@@ -64,20 +64,25 @@ def setup_logging(app):
     app.logger.info(f"Logging initialized - Level: {log_level}, File: {log_file or 'None'}")
 
 
-def create_app(config_name='default'):
+def create_app(config_name=None):
     """
     Application factory function.
 
     Args:
-        config_name (str): Configuration name ('development', 'production', 'default')
+        config_name (str|None): Configuration name ('development', 'production').
+            When None (or 'default'), the value of the FLASK_ENV environment
+            variable is used (defaults to 'development').
 
     Returns:
         Flask: Configured Flask application instance
     """
+    if not config_name or config_name == 'default':
+        config_name = os.getenv('FLASK_ENV', 'development')
+
     app = Flask(__name__)
 
     # Load configuration
-    app.config.from_object(config[config_name])
+    app.config.from_object(config.get(config_name, config['development']))
 
     # Setup logging
     setup_logging(app)

@@ -6,7 +6,12 @@ import os
 from datetime import timedelta
 from dotenv import load_dotenv
 
-load_dotenv()
+# Priority order (highest → lowest):
+#   1. System environment variables (e.g. cPanel "Environment variables", Docker, CI)
+#   2. .env file (local development or server-side .env)
+#   3. Hardcoded defaults below
+# override=False ensures system env vars are NEVER overwritten by the .env file.
+load_dotenv(override=False)
 
 
 class Config:
@@ -62,8 +67,9 @@ class ProductionConfig(Config):
 
 
 # Configuration dictionary
+# 'default' auto-resolves based on FLASK_ENV (falls back to development)
 config = {
     'development': DevelopmentConfig,
     'production': ProductionConfig,
-    'default': DevelopmentConfig
+    'default': ProductionConfig if os.getenv('FLASK_ENV') == 'production' else DevelopmentConfig,
 }
