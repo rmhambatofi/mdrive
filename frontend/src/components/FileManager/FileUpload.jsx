@@ -44,7 +44,7 @@ const FileUpload = ({ isOpen, onClose, onUploadComplete, currentFolderId }) => {
     const newFiles = Array.from(fileList).map((file) => ({
       file,
       progress: 0,
-      status: 'pending', // pending, uploading, success, error
+      status: 'pending',
       error: null,
     }));
     setFiles((prev) => [...prev, ...newFiles]);
@@ -85,6 +85,7 @@ const FileUpload = ({ isOpen, onClose, onUploadComplete, currentFolderId }) => {
           )
         );
       } catch (error) {
+        console.error('Upload error: ', error);
         const is413 =
           error.response?.status === 413 ||
           error.response?.data?.details?.includes('413');
@@ -93,13 +94,7 @@ const FileUpload = ({ isOpen, onClose, onUploadComplete, currentFolderId }) => {
           : error.response?.data?.error || 'Upload failed';
         setFiles((prev) =>
           prev.map((f, idx) =>
-            idx === i
-              ? {
-                  ...f,
-                  status: 'error',
-                  error: errorMessage,
-                }
-              : f
+            idx === i ? { ...f, status: 'error', error: errorMessage } : f
           )
         );
       }
@@ -121,15 +116,15 @@ const FileUpload = ({ isOpen, onClose, onUploadComplete, currentFolderId }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Upload Files</h2>
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Upload Files</h2>
           <button
             onClick={handleClose}
             disabled={uploading}
-            className="p-1 hover:bg-gray-100 rounded-lg transition disabled:opacity-50"
+            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition disabled:opacity-50"
           >
-            <X className="w-6 h-6 text-gray-500" />
+            <X className="w-6 h-6 text-gray-500 dark:text-gray-400" />
           </button>
         </div>
 
@@ -141,15 +136,15 @@ const FileUpload = ({ isOpen, onClose, onUploadComplete, currentFolderId }) => {
             onDrop={handleDrop}
             className={`border-2 border-dashed rounded-lg p-8 text-center transition ${
               dragActive
-                ? 'border-blue-500 bg-blue-50'
-                : 'border-gray-300 hover:border-gray-400'
+                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
             }`}
           >
-            <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-700 mb-2">Drag and drop files here, or</p>
+            <Upload className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+            <p className="text-gray-700 dark:text-gray-300 mb-2">Drag and drop files here, or</p>
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="text-blue-600 hover:text-blue-700 font-medium"
+              className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
             >
               Browse files
             </button>
@@ -165,10 +160,7 @@ const FileUpload = ({ isOpen, onClose, onUploadComplete, currentFolderId }) => {
           {files.length > 0 && (
             <div className="mt-6 space-y-3">
               {files.map((file, index) => (
-                <div
-                  key={index}
-                  className="border border-gray-200 rounded-lg p-4"
-                >
+                <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-3 flex-1 min-w-0">
                       {file.status === 'success' && (
@@ -180,10 +172,10 @@ const FileUpload = ({ isOpen, onClose, onUploadComplete, currentFolderId }) => {
                       {file.status === 'uploading' && (
                         <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
                       )}
-                      <span className="text-sm text-gray-900 truncate">
+                      <span className="text-sm text-gray-900 dark:text-gray-100 truncate">
                         {file.file.name}
                       </span>
-                      <span className="text-xs text-gray-500 flex-shrink-0">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
                         {fileService.formatFileSize(file.file.size)}
                       </span>
                     </div>
@@ -191,15 +183,15 @@ const FileUpload = ({ isOpen, onClose, onUploadComplete, currentFolderId }) => {
                     {!uploading && file.status !== 'uploading' && (
                       <button
                         onClick={() => removeFile(index)}
-                        className="p-1 hover:bg-gray-100 rounded transition ml-2"
+                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition ml-2"
                       >
-                        <X className="w-4 h-4 text-gray-500" />
+                        <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                       </button>
                     )}
                   </div>
 
                   {file.status === 'uploading' && (
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                       <div
                         className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                         style={{ width: `${file.progress}%` }}
@@ -216,11 +208,11 @@ const FileUpload = ({ isOpen, onClose, onUploadComplete, currentFolderId }) => {
           )}
         </div>
 
-        <div className="p-6 border-t border-gray-200 flex justify-end space-x-3">
+        <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
           <button
             onClick={handleClose}
             disabled={uploading}
-            className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition disabled:opacity-50"
+            className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition disabled:opacity-50"
           >
             Cancel
           </button>

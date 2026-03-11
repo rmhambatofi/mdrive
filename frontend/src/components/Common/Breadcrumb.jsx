@@ -10,7 +10,7 @@ const Breadcrumb = ({ items, onNavigate }) => {
     <nav className="flex items-center space-x-2 text-sm mb-6">
       <button
         onClick={() => onNavigate(null)}
-        className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 transition"
+        className="flex items-center space-x-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition"
       >
         <Home className="w-4 h-4" />
         <span>My Files</span>
@@ -18,13 +18,13 @@ const Breadcrumb = ({ items, onNavigate }) => {
 
       {items.map((item, index) => (
         <React.Fragment key={item.id}>
-          <ChevronRight className="w-4 h-4 text-gray-400" />
+          <ChevronRight className="w-4 h-4 text-gray-400 dark:text-gray-600" />
           <button
             onClick={() => onNavigate(item.id)}
-            className={`hover:text-gray-900 transition ${
+            className={`hover:text-gray-900 dark:hover:text-gray-100 transition ${
               index === items.length - 1
-                ? 'text-gray-900 font-medium'
-                : 'text-gray-600'
+                ? 'text-gray-900 dark:text-gray-100 font-medium'
+                : 'text-gray-600 dark:text-gray-400'
             }`}
           >
             {item.name}

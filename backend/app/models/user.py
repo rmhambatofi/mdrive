@@ -2,10 +2,18 @@
 User model module.
 Defines the User database model and related methods.
 """
+import enum
 import uuid as uuid_lib
 from datetime import datetime
 from app import db
 import bcrypt
+
+
+class UserRole(enum.Enum):
+    """Enumeration of available user roles."""
+    ADMIN = 'ADMIN'
+    SUBSCRIBER = 'SUBSCRIBER'
+    LIMITED_SUBSCRIBER = 'LIMITED_SUBSCRIBER'
 
 
 class User(db.Model):
@@ -17,6 +25,7 @@ class User(db.Model):
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
     full_name = db.Column(db.String(255))
+    role = db.Column(db.Enum(UserRole), nullable=False, default=UserRole.LIMITED_SUBSCRIBER)
     storage_quota = db.Column(db.BigInteger, default=5368709120)  # 5GB default
     storage_used = db.Column(db.BigInteger, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -25,7 +34,8 @@ class User(db.Model):
     # Relationships
     files = db.relationship('File', backref='owner', lazy='dynamic', cascade='all, delete-orphan')
 
-    def __init__(self, email, password, full_name=None, storage_quota=None):
+    def __init__(self, email: str, password: str, full_name: str = None,
+                 storage_quota: int = None, role: 'UserRole' = None):
         """
         Initialize a new user.
 
@@ -34,14 +44,16 @@ class User(db.Model):
             password (str): Plain text password (will be hashed)
             full_name (str, optional): User's full name
             storage_quota (int, optional): Storage quota in bytes
+            role (UserRole, optional): User role (default: LIMITED_SUBSCRIBER)
         """
         self.email = email
         self.set_password(password)
         self.full_name = full_name
+        self.role = role or UserRole.LIMITED_SUBSCRIBER
         if storage_quota:
             self.storage_quota = storage_quota
 
-    def set_password(self, password):
+    def set_password(self, password: str) -> None:
         """
         Hash and set user password.
 
@@ -50,7 +62,7 @@ class User(db.Model):
         """
         self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
-    def check_password(self, password):
+    def check_password(self, password: str) -> bool:
         """
         Verify password against stored hash.
 
@@ -62,7 +74,7 @@ class User(db.Model):
         """
         return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
 
-    def to_dict(self, include_storage=True):
+    def to_dict(self, include_storage: bool = True) -> dict:
         """
         Convert user object to dictionary.
 
@@ -76,6 +88,7 @@ class User(db.Model):
             'id': self.uuid,
             'email': self.email,
             'full_name': self.full_name,
+            'role': self.role.value,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 

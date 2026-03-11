@@ -78,8 +78,8 @@ const FileList = ({ files, selectedIds, onToggleSelect, onFileClick, onRefresh }
               key={file.id}
               className={`relative rounded-xl p-3 cursor-pointer transition-all select-none
                 ${isSelected
-                  ? 'bg-blue-50 border-2 border-blue-400 shadow-sm'
-                  : 'bg-white border-2 border-transparent hover:border-gray-200 hover:shadow-md'
+                  ? 'bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-400 shadow-sm'
+                  : 'bg-white dark:bg-gray-800 border-2 border-transparent hover:border-gray-200 dark:hover:border-gray-600 hover:shadow-md'
                 }`}
               onClick={() => handleCardClick(file)}
               onMouseEnter={() => setHoveredId(file.id)}
@@ -93,7 +93,7 @@ const FileList = ({ files, selectedIds, onToggleSelect, onFileClick, onRefresh }
                 <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors
                   ${isSelected
                     ? 'bg-blue-500 border-blue-500'
-                    : 'bg-white border-gray-400 hover:border-blue-400'
+                    : 'bg-white dark:bg-gray-700 border-gray-400 dark:border-gray-500 hover:border-blue-400'
                   }`}
                 >
                   {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
@@ -103,11 +103,11 @@ const FileList = ({ files, selectedIds, onToggleSelect, onFileClick, onRefresh }
               {/* Rename button (hover, not selected) */}
               {isHovered && !isSelected && (
                 <button
-                  className="absolute top-2 right-2 z-10 p-1 bg-white rounded-md shadow-sm hover:bg-gray-100 transition"
+                  className="absolute top-2 right-2 z-10 p-1 bg-white dark:bg-gray-700 rounded-md shadow-sm hover:bg-gray-100 dark:hover:bg-gray-600 transition"
                   onClick={(e) => startRename(e, file)}
                   title="Rename"
                 >
-                  <Edit className="w-3.5 h-3.5 text-gray-500" />
+                  <Edit className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
                 </button>
               )}
 
@@ -128,16 +128,16 @@ const FileList = ({ files, selectedIds, onToggleSelect, onFileClick, onRefresh }
                     if (e.key === 'Escape') setRenamingFile(null);
                   }}
                   onClick={(e) => e.stopPropagation()}
-                  className="w-full text-xs text-center border border-blue-400 rounded px-1 py-0.5 outline-none"
+                  className="w-full text-xs text-center border border-blue-400 dark:border-blue-500 rounded px-1 py-0.5 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 />
               ) : (
-                <p className="text-xs font-medium text-gray-800 truncate text-center" title={file.file_name}>
+                <p className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate text-center" title={file.file_name}>
                   {file.file_name}
                 </p>
               )}
 
               {/* Meta */}
-              <p className="text-xs text-gray-400 text-center mt-1">
+              <p className="text-xs text-gray-400 dark:text-gray-500 text-center mt-1">
                 {file.is_folder ? 'Folder' : fileService.formatFileSize(file.file_size)}
               </p>
             </div>
@@ -147,9 +147,9 @@ const FileList = ({ files, selectedIds, onToggleSelect, onFileClick, onRefresh }
 
       {files.length === 0 && (
         <div className="text-center py-16">
-          <Folder className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No files yet</h3>
-          <p className="text-gray-500">Upload your first file to get started</p>
+          <Folder className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No files yet</h3>
+          <p className="text-gray-500 dark:text-gray-400">Upload your first file to get started</p>
         </div>
       )}
     </>

@@ -19,20 +19,20 @@ import { AlertTriangle, Trash2, Info, X } from 'lucide-react';
 const VARIANT_CONFIG = {
   danger: {
     icon: Trash2,
-    iconBg: 'bg-red-100',
-    iconColor: 'text-red-600',
+    iconBg: 'bg-red-100 dark:bg-red-900/30',
+    iconColor: 'text-red-600 dark:text-red-400',
     confirmClass: 'bg-red-600 hover:bg-red-700 text-white',
   },
   warning: {
     icon: AlertTriangle,
-    iconBg: 'bg-yellow-100',
-    iconColor: 'text-yellow-600',
+    iconBg: 'bg-yellow-100 dark:bg-yellow-900/30',
+    iconColor: 'text-yellow-600 dark:text-yellow-400',
     confirmClass: 'bg-yellow-500 hover:bg-yellow-600 text-white',
   },
   default: {
     icon: Info,
-    iconBg: 'bg-blue-100',
-    iconColor: 'text-blue-600',
+    iconBg: 'bg-blue-100 dark:bg-blue-900/30',
+    iconColor: 'text-blue-600 dark:text-blue-400',
     confirmClass: 'bg-blue-600 hover:bg-blue-700 text-white',
   },
 };
@@ -54,29 +54,29 @@ const ConfirmModal = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-md w-full">
 
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-3">
             <div className={`w-10 h-10 ${iconBg} rounded-lg flex items-center justify-center`}>
               <Icon className={`w-5 h-5 ${iconColor}`} />
             </div>
-            <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{title}</h2>
           </div>
           <button
             onClick={onClose}
             disabled={loading}
-            className="p-1 hover:bg-gray-100 rounded-lg transition disabled:opacity-50"
+            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition disabled:opacity-50"
           >
-            <X className="w-6 h-6 text-gray-500" />
+            <X className="w-6 h-6 text-gray-500 dark:text-gray-400" />
           </button>
         </div>
 
         {/* Body */}
         {message && (
           <div className="px-6 py-4">
-            <p className="text-sm text-gray-600">{message}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{message}</p>
           </div>
         )}
 
@@ -86,7 +86,7 @@ const ConfirmModal = ({
             type="button"
             onClick={onClose}
             disabled={loading}
-            className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition disabled:opacity-50"
+            className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition disabled:opacity-50"
           >
             {cancelLabel}
           </button>

@@ -16,7 +16,7 @@ const Sidebar = ({ isOpen, onClose, onUploadClick, onCreateFolderClick }) => {
       )}
 
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ${
+        className={`fixed lg:static inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 transform transition-transform duration-300 ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
@@ -31,7 +31,7 @@ const Sidebar = ({ isOpen, onClose, onUploadClick, onCreateFolderClick }) => {
 
           <button
             onClick={onCreateFolderClick}
-            className="w-full flex items-center space-x-3 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+            className="w-full flex items-center space-x-3 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition"
           >
             <FolderPlus className="w-5 h-5" />
             <span>New Folder</span>
@@ -39,7 +39,7 @@ const Sidebar = ({ isOpen, onClose, onUploadClick, onCreateFolderClick }) => {
         </div>
 
         <div className="px-4 py-2 mt-4">
-          <div className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg cursor-pointer transition">
+          <div className="flex items-center space-x-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg cursor-pointer transition">
             <Home className="w-5 h-5" />
             <span>My Files</span>
           </div>

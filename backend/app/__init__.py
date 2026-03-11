@@ -107,9 +107,11 @@ def create_app(config_name='default'):
     # Register blueprints
     from app.routes.auth_routes import auth_bp
     from app.routes.file_routes import file_bp
+    from app.routes.admin_routes import admin_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(file_bp, url_prefix='/api/files')
+    app.register_blueprint(admin_bp, url_prefix='/api/admin')
 
     # Error handlers
     @app.errorhandler(404)
