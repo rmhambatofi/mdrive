@@ -12,6 +12,7 @@ import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminSettings from './pages/AdminSettings';
 
 function App() {
   return (
@@ -29,11 +30,20 @@ function App() {
               </PrivateRoute>
             }
           />
+          <Route path="/admin" element={<Navigate to="/admin/users" replace />} />
           <Route
-            path="/admin"
+            path="/admin/users"
             element={
               <AdminRoute>
                 <AdminDashboard />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/settings"
+            element={
+              <AdminRoute>
+                <AdminSettings />
               </AdminRoute>
             }
           />

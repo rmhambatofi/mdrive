@@ -34,8 +34,6 @@ class AdminController:
         Update a user's role.
 
         Requires: JWT token with ADMIN role
-        Args:
-            user_uuid (str): Target user UUID
 
         Expected JSON body:
             { "role": "ADMIN" | "SUBSCRIBER" | "LIMITED_SUBSCRIBER" }
@@ -56,3 +54,23 @@ class AdminController:
             return jsonify(response_data), status_code
         except Exception as e:
             return jsonify({'error': 'Failed to update role', 'details': str(e)}), 500
+
+    @staticmethod
+    @admin_required
+    def toggle_user_active(admin, user_uuid):
+        """
+        Toggle the active/inactive status of a user.
+
+        Requires: JWT token with ADMIN role
+
+        Returns:
+            JSON response with updated user data
+        """
+        try:
+            success, response_data, status_code = AdminService.toggle_user_active(
+                admin_uuid=admin.uuid,
+                target_uuid=user_uuid,
+            )
+            return jsonify(response_data), status_code
+        except Exception as e:
+            return jsonify({'error': 'Failed to toggle user status', 'details': str(e)}), 500

@@ -28,6 +28,9 @@ def jwt_required_custom(fn):
             if not user:
                 return jsonify({'error': 'User not found'}), 401
 
+            if not user.is_active:
+                return jsonify({'error': 'Account deactivated'}), 403
+
             return fn(user, *args, **kwargs)
 
         except Exception as e:

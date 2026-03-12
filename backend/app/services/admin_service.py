@@ -25,6 +25,8 @@ class AdminService:
             'admins': sum(1 for u in users if u.role == UserRole.ADMIN),
             'subscribers': sum(1 for u in users if u.role == UserRole.SUBSCRIBER),
             'limited_subscribers': sum(1 for u in users if u.role == UserRole.LIMITED_SUBSCRIBER),
+            'active': sum(1 for u in users if u.is_active),
+            'inactive': sum(1 for u in users if not u.is_active),
         }
 
         return True, {
@@ -45,7 +47,6 @@ class AdminService:
         Returns:
             tuple: (success: bool, data: dict, status_code: int)
         """
-        # Validate role value
         valid_roles = {r.value for r in UserRole}
         if new_role not in valid_roles:
             return False, {
@@ -56,7 +57,6 @@ class AdminService:
         if not user:
             return False, {'error': 'User not found'}, 404
 
-        # Prevent an admin from demoting themselves
         if target_uuid == admin_uuid and UserRole[new_role] != UserRole.ADMIN:
             return False, {'error': 'You cannot change your own admin role'}, 403
 
@@ -73,3 +73,38 @@ class AdminService:
             db.session.rollback()
             current_app.logger.error(f"Role update error: {str(e)}")
             return False, {'error': 'Failed to update role', 'details': str(e)}, 500
+
+    @staticmethod
+    def toggle_user_active(admin_uuid: str, target_uuid: str) -> tuple:
+        """
+        Toggle the is_active flag of a user.
+
+        Args:
+            admin_uuid (str): UUID of the admin performing the action
+            target_uuid (str): UUID of the user to toggle
+
+        Returns:
+            tuple: (success: bool, data: dict, status_code: int)
+        """
+        user = User.query.get(target_uuid)
+        if not user:
+            return False, {'error': 'User not found'}, 404
+
+        # Prevent an admin from deactivating themselves
+        if target_uuid == admin_uuid:
+            return False, {'error': 'You cannot deactivate your own account'}, 403
+
+        try:
+            user.is_active = not user.is_active
+            db.session.commit()
+
+            state = 'activated' if user.is_active else 'deactivated'
+            return True, {
+                'message': f'User {state} successfully',
+                'user': user.to_dict()
+            }, 200
+
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Toggle active error: {str(e)}")
+            return False, {'error': 'Failed to toggle user status', 'details': str(e)}, 500

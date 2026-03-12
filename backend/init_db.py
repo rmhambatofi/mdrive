@@ -6,6 +6,7 @@ import os
 from app import create_app, db
 from app.models.user import User
 from app.models.file import File
+from app.models.setting import Setting
 
 def init_database():
     """Initialize the database with tables."""
@@ -24,6 +25,11 @@ def init_database():
         db.create_all()
 
         print("Database tables created successfully!")
+
+        # Seed default application settings
+        print("Seeding default settings...")
+        Setting.get()  # creates the singleton row with defaults if absent
+        print("Default settings seeded.")
 
         # Create test user (optional)
         create_test = input("\nDo you want to create a test user? (y/n): ").lower()

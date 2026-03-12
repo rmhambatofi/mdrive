@@ -23,6 +23,15 @@ const adminService = {
     const response = await api.put(`/admin/users/${userUuid}/role`, { role });
     return response.data;
   },
+
+  /**
+   * Toggle the active/inactive status of a user.
+   * @param {string} userUuid
+   */
+  toggleUserActive: async (userUuid) => {
+    const response = await api.put(`/admin/users/${userUuid}/active`);
+    return response.data;
+  },
 };
 
 export default adminService;

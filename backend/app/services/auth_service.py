@@ -46,7 +46,6 @@ class AuthService:
                 email=email,
                 password=password,
                 full_name=full_name,
-                storage_quota=current_app.config['DEFAULT_STORAGE_QUOTA']
             )
 
             db.session.add(user)
@@ -95,6 +94,9 @@ class AuthService:
 
         if not user or not user.check_password(password):
             return False, {'error': 'Invalid email or password'}, 401
+
+        if not user.is_active:
+            return False, {'error': 'Your account has been deactivated. Please contact an administrator.'}, 403
 
         try:
             # Generate JWT token with UUID as identity

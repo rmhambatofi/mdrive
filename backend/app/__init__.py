@@ -109,6 +109,9 @@ def create_app(config_name=None):
     app.logger.info(f"Upload folder: {app.config['UPLOAD_FOLDER']}")
     app.logger.info(f"CORS origins: {app.config['CORS_ORIGINS']}")
 
+    # Import models so Flask-Migrate can detect all tables
+    from app.models import user, file, setting  # noqa: F401
+
     # Register blueprints
     from app.routes.auth_routes import auth_bp
     from app.routes.file_routes import file_bp
@@ -117,6 +120,10 @@ def create_app(config_name=None):
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(file_bp, url_prefix='/api/files')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
+
+    # Register CLI commands
+    from app.cli import create_admin_command
+    app.cli.add_command(create_admin_command)
 
     # Error handlers
     @app.errorhandler(404)

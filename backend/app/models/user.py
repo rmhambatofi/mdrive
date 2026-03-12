@@ -26,7 +26,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     full_name = db.Column(db.String(255))
     role = db.Column(db.Enum(UserRole), nullable=False, default=UserRole.LIMITED_SUBSCRIBER)
-    storage_quota = db.Column(db.BigInteger, default=5368709120)  # 5GB default
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
     storage_used = db.Column(db.BigInteger, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -35,7 +35,7 @@ class User(db.Model):
     files = db.relationship('File', backref='owner', lazy='dynamic', cascade='all, delete-orphan')
 
     def __init__(self, email: str, password: str, full_name: str = None,
-                 storage_quota: int = None, role: 'UserRole' = None):
+                 role: 'UserRole' = None):
         """
         Initialize a new user.
 
@@ -43,15 +43,39 @@ class User(db.Model):
             email (str): User email address
             password (str): Plain text password (will be hashed)
             full_name (str, optional): User's full name
-            storage_quota (int, optional): Storage quota in bytes
             role (UserRole, optional): User role (default: LIMITED_SUBSCRIBER)
         """
         self.email = email
         self.set_password(password)
         self.full_name = full_name
         self.role = role or UserRole.LIMITED_SUBSCRIBER
-        if storage_quota:
-            self.storage_quota = storage_quota
+        self.is_active = True
+
+    @property
+    def storage_quota(self) -> int:
+        """
+        Storage quota derived from global settings based on user role.
+        Cached on Flask's request context (g) to avoid repeated DB hits
+        when serialising multiple users in the same request.
+
+        Returns:
+            int: Quota in bytes
+        """
+        from app.models.setting import Setting
+        try:
+            from flask import g
+            if not hasattr(g, '_app_settings'):
+                g._app_settings = Setting.get()
+            settings = g._app_settings
+        except RuntimeError:
+            # Outside a request context (e.g. CLI commands)
+            settings = Setting.get()
+
+        if self.role == UserRole.ADMIN:
+            return settings.admin_quota
+        if self.role == UserRole.SUBSCRIBER:
+            return settings.subscriber_quota
+        return settings.limited_subscriber_quota
 
     def set_password(self, password: str) -> None:
         """
@@ -89,14 +113,16 @@ class User(db.Model):
             'email': self.email,
             'full_name': self.full_name,
             'role': self.role.value,
+            'is_active': self.is_active,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 
         if include_storage:
+            quota = self.storage_quota
             data.update({
-                'storage_quota': self.storage_quota,
+                'storage_quota': quota,
                 'storage_used': self.storage_used,
-                'storage_available': self.storage_quota - self.storage_used
+                'storage_available': quota - self.storage_used
             })
 
         return data

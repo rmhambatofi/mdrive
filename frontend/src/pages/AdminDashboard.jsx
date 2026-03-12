@@ -1,11 +1,11 @@
 /**
  * AdminDashboard Page
- * Administration interface — visible to ADMIN role only.
+ * User management interface — visible to ADMIN role only.
  */
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Users, ShieldCheck, Star, User, Loader2, ChevronLeft } from 'lucide-react';
-import Navbar from '../components/Layout/Navbar';
+import { Users, ShieldCheck, Star, User, Loader2, UserCheck, UserX } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import AdminLayout from '../components/Admin/AdminLayout';
 import adminService from '../services/adminService';
 
 const ROLES = ['ADMIN', 'SUBSCRIBER', 'LIMITED_SUBSCRIBER'];
@@ -29,12 +29,33 @@ const formatStorage = (bytes) => {
   return `${bytes} B`;
 };
 
+/** Animated toggle switch */
+const Toggle = ({ checked, onChange, disabled }) => (
+  <button
+    type="button"
+    role="switch"
+    aria-checked={checked}
+    onClick={onChange}
+    disabled={disabled}
+    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed ${
+      checked ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
+    }`}
+  >
+    <span
+      className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform duration-200 ${
+        checked ? 'translate-x-5' : 'translate-x-0'
+      }`}
+    />
+  </button>
+);
+
 const AdminDashboard = () => {
-  const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [updatingId, setUpdatingId] = useState(null);
+  const [updatingRoleId, setUpdatingRoleId] = useState(null);
+  const [togglingId, setTogglingId] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -56,98 +77,140 @@ const AdminDashboard = () => {
   };
 
   const handleRoleChange = async (userUuid, newRole) => {
-    setUpdatingId(userUuid);
+    setUpdatingRoleId(userUuid);
     try {
       const data = await adminService.updateUserRole(userUuid, newRole);
       setUsers((prev) => prev.map((u) => (u.id === userUuid ? data.user : u)));
     } catch {
       setError('Failed to update role.');
     } finally {
-      setUpdatingId(null);
+      setUpdatingRoleId(null);
+    }
+  };
+
+  const handleToggleActive = async (userUuid) => {
+    setTogglingId(userUuid);
+    try {
+      const data = await adminService.toggleUserActive(userUuid);
+      setUsers((prev) => prev.map((u) => (u.id === userUuid ? data.user : u)));
+    } catch {
+      setError('Failed to update user status.');
+    } finally {
+      setTogglingId(null);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <Navbar onMenuClick={() => {}} />
+    <AdminLayout title="Manage Users" subtitle="Manage user accounts and roles">
+      {/* Stats cards */}
+      {stats && (
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+          <StatCard icon={Users}      label="Total"       value={stats.total}               color="blue" />
+          <StatCard icon={ShieldCheck} label="Admins"     value={stats.admins}              color="purple" />
+          <StatCard icon={Star}       label="Subscribers" value={stats.subscribers}         color="green" />
+          <StatCard icon={User}       label="Limited"     value={stats.limited_subscribers} color="gray" />
+          <StatCard icon={UserCheck}  label="Active"      value={stats.active}              color="teal" />
+          <StatCard icon={UserX}      label="Inactive"    value={stats.inactive}            color="red" />
+        </div>
+      )}
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      {/* Error */}
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg mb-6 text-sm">
+          {error}
+        </div>
+      )}
 
-        {/* Header */}
-        <div className="flex items-center space-x-4 mb-8">
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition"
-          >
-            <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-          </button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Administration</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Manage users and roles</p>
-          </div>
+      {/* Users table */}
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-white">Users</h2>
         </div>
 
-        {/* Stats cards */}
-        {stats && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <StatCard icon={Users} label="Total Users" value={stats.total} color="blue" />
-            <StatCard icon={ShieldCheck} label="Admins" value={stats.admins} color="purple" />
-            <StatCard icon={Star} label="Subscribers" value={stats.subscribers} color="green" />
-            <StatCard icon={User} label="Limited" value={stats.limited_subscribers} color="gray" />
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-7 h-7 text-blue-600 animate-spin" />
           </div>
-        )}
-
-        {/* Error */}
-        {error && (
-          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg mb-6 text-sm">
-            {error}
-          </div>
-        )}
-
-        {/* Users table */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-base font-semibold text-gray-900 dark:text-white">Users</h2>
-          </div>
-
-          {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 className="w-7 h-7 text-blue-600 animate-spin" />
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 dark:bg-gray-800 text-left">
-                    <th className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
-                    <th className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Role</th>
-                    <th className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Storage</th>
-                    <th className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Joined</th>
-                    <th className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Change role</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                  {users.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 dark:bg-gray-800 text-left">
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Role</th>
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Storage</th>
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Joined</th>
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Change role</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                {users.map((user) => {
+                  const isSelf = user.id === currentUser?.id;
+                  return (
+                    <tr
+                      key={user.id}
+                      className={`transition ${
+                        user.is_active
+                          ? 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                          : 'bg-gray-50/60 dark:bg-gray-800/30 opacity-60'
+                      }`}
+                    >
+                      {/* User */}
                       <td className="px-6 py-4">
-                        <div className="font-medium text-gray-900 dark:text-gray-100">{user.full_name || '—'}</div>
+                        <div className="font-medium text-gray-900 dark:text-gray-100">
+                          {user.full_name || '—'}
+                          {isSelf && (
+                            <span className="ml-2 text-xs text-blue-500 dark:text-blue-400">(you)</span>
+                          )}
+                        </div>
                         <div className="text-gray-500 dark:text-gray-400 text-xs">{user.email}</div>
                       </td>
+
+                      {/* Status toggle */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center space-x-2">
+                          <Toggle
+                            checked={user.is_active}
+                            onChange={() => handleToggleActive(user.id)}
+                            disabled={isSelf || togglingId === user.id}
+                          />
+                          {togglingId === user.id ? (
+                            <Loader2 className="w-3.5 h-3.5 text-blue-600 animate-spin" />
+                          ) : (
+                            <span className={`text-xs font-medium ${
+                              user.is_active
+                                ? 'text-green-600 dark:text-green-400'
+                                : 'text-gray-400 dark:text-gray-500'
+                            }`}>
+                              {user.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Role badge */}
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${ROLE_CLASSES[user.role]}`}>
                           {ROLE_LABELS[user.role] ?? user.role}
                         </span>
                       </td>
+
+                      {/* Storage */}
                       <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
                         {formatStorage(user.storage_used)} / {formatStorage(user.storage_quota)}
                       </td>
+
+                      {/* Joined */}
                       <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
                         {user.created_at ? new Date(user.created_at).toLocaleDateString() : '—'}
                       </td>
+
+                      {/* Change role */}
                       <td className="px-6 py-4">
                         <select
                           value={user.role}
-                          disabled={updatingId === user.id}
+                          disabled={updatingRoleId === user.id || isSelf}
                           onChange={(e) => handleRoleChange(user.id, e.target.value)}
                           className="text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none disabled:opacity-50"
                         >
@@ -155,19 +218,19 @@ const AdminDashboard = () => {
                             <option key={r} value={r}>{ROLE_LABELS[r]}</option>
                           ))}
                         </select>
-                        {updatingId === user.id && (
+                        {updatingRoleId === user.id && (
                           <Loader2 className="inline w-4 h-4 ml-2 text-blue-600 animate-spin" />
                         )}
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </main>
-    </div>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </AdminLayout>
   );
 };
 
@@ -177,6 +240,8 @@ const StatCard = ({ icon: Icon, label, value, color }) => {
     purple: 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
     green:  'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400',
     gray:   'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
+    teal:   'bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400',
+    red:    'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400',
   };
 
   return (
