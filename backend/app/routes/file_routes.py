@@ -56,3 +56,29 @@ def create_folder():
 def rename_file(file_uuid):
     """PUT /api/files/<file_uuid>/rename - Rename a file or folder"""
     return FileController.rename_file(file_uuid)
+
+
+# ── Recycle Bin routes ──────────────────────────────────
+
+@file_bp.route('/trash', methods=['GET'])
+def get_trash():
+    """GET /api/files/trash - List files in Recycle Bin"""
+    return FileController.get_trash()
+
+
+@file_bp.route('/trash', methods=['DELETE'])
+def empty_trash():
+    """DELETE /api/files/trash - Empty the Recycle Bin"""
+    return FileController.empty_trash()
+
+
+@file_bp.route('/<string:file_uuid>/restore', methods=['POST'])
+def restore_file(file_uuid):
+    """POST /api/files/<file_uuid>/restore - Restore a file from Recycle Bin"""
+    return FileController.restore_file(file_uuid)
+
+
+@file_bp.route('/<string:file_uuid>/permanent', methods=['DELETE'])
+def permanently_delete(file_uuid):
+    """DELETE /api/files/<file_uuid>/permanent - Permanently delete a file"""
+    return FileController.permanently_delete(file_uuid)

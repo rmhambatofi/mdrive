@@ -32,3 +32,9 @@ def get_profile():
 def update_profile():
     """PUT /api/auth/profile - Update current user profile"""
     return AuthController.update_profile()
+
+
+@auth_bp.route('/password', methods=['PUT'])
+def change_password():
+    """PUT /api/auth/password - Change current user password"""
+    return AuthController.change_password()

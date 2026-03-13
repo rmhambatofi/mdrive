@@ -3,9 +3,15 @@
  * Side navigation with quick actions
  */
 import React from 'react';
-import { Home, FolderPlus, Upload } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Home, FolderPlus, Upload, Trash2 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, onClose, onUploadClick, onCreateFolderClick }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isTrash = location.pathname === '/trash';
+  const isDashboard = location.pathname === '/dashboard';
+
   return (
     <>
       {isOpen && (
@@ -39,9 +45,27 @@ const Sidebar = ({ isOpen, onClose, onUploadClick, onCreateFolderClick }) => {
         </div>
 
         <div className="px-4 py-2 mt-4">
-          <div className="flex items-center space-x-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg cursor-pointer transition">
+          <div
+            onClick={() => { navigate('/dashboard'); onClose(); }}
+            className={`flex items-center space-x-3 px-4 py-3 rounded-lg cursor-pointer transition ${
+              isDashboard
+                ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+            }`}
+          >
             <Home className="w-5 h-5" />
             <span>My Files</span>
+          </div>
+          <div
+            onClick={() => { navigate('/trash'); onClose(); }}
+            className={`flex items-center space-x-3 px-4 py-3 rounded-lg cursor-pointer transition ${
+              isTrash
+                ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+            }`}
+          >
+            <Trash2 className="w-5 h-5" />
+            <span>Recycle Bin</span>
           </div>
         </div>
       </aside>

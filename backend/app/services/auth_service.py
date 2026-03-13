@@ -162,3 +162,37 @@ class AuthService:
             db.session.rollback()
             current_app.logger.error(f"Profile update error: {str(e)}")
             return False, {'error': 'Profile update failed', 'details': str(e)}, 500
+
+    @staticmethod
+    def change_password(user_uuid: str, current_password: str, new_password: str) -> tuple:
+        """
+        Change a user's password after verifying the current one.
+
+        Args:
+            user_uuid (str): User UUID
+            current_password (str): Current plain-text password
+            new_password (str): New plain-text password
+
+        Returns:
+            tuple: (success: bool, data: dict, status_code: int)
+        """
+        user = User.query.get(user_uuid)
+        if not user:
+            return False, {'error': 'User not found'}, 404
+
+        if not user.check_password(current_password):
+            return False, {'error': 'Current password is incorrect'}, 400
+
+        is_valid, error_msg = validate_password(new_password)
+        if not is_valid:
+            return False, {'error': error_msg}, 400
+
+        try:
+            user.set_password(new_password)
+            db.session.commit()
+            return True, {'message': 'Password changed successfully'}, 200
+
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Password change error: {str(e)}")
+            return False, {'error': 'Failed to change password', 'details': str(e)}, 500

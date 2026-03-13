@@ -5,6 +5,7 @@ Handles file and folder operations with database persistence.
 import os
 import io
 import zipfile
+from datetime import datetime, timedelta
 from flask import current_app
 from werkzeug.utils import secure_filename
 from app import db
@@ -141,14 +142,23 @@ class FileService:
             query = File.query.filter_by(
                 user_uuid=user.uuid,
                 parent_folder_uuid=parent_folder_uuid
+            ).filter(
+                File.is_deleted == False
             ).order_by(File.is_folder.desc(), File.file_name)
 
             pagination = query.paginate(page=page, per_page=per_page, error_out=False)
 
-            files = [{
-                **file.to_dict(),
-                'icon': get_file_icon(file.mime_type, file.is_folder)
-            } for file in pagination.items]
+            files = []
+            for file in pagination.items:
+                file_data = {
+                    **file.to_dict(),
+                    'icon': get_file_icon(file.mime_type, file.is_folder)
+                }
+                if file.is_folder:
+                    file_data['item_count'] = file.children.filter(
+                        File.is_deleted == False
+                    ).count()
+                files.append(file_data)
 
             # Get breadcrumb if in a folder
             breadcrumb = []
@@ -194,14 +204,7 @@ class FileService:
     @staticmethod
     def delete_file(user, file_uuid):
         """
-        Delete a file or folder.
-
-        Args:
-            user (User): User object
-            file_uuid (str): File UUID
-
-        Returns:
-            tuple: (success: bool, data: dict, status_code: int)
+        Soft-delete a file (move to Recycle Bin), or permanently delete if already in bin.
         """
         file = File.query.filter_by(uuid=file_uuid, user_uuid=user.uuid).first()
 
@@ -209,29 +212,186 @@ class FileService:
             return False, {'error': 'File not found'}, 404
 
         try:
-            # Calculate total size (including folder contents)
-            total_size = FileService._calculate_size_recursive(file)
+            if file.is_deleted:
+                return FileService.permanently_delete(user, file_uuid)
 
-            # Delete from storage
-            success, message = StorageService.delete_file(user.uuid, file.file_path)
-
-            if not success:
-                return False, {'error': message}, 500
-
-            # Delete from database (cascade will delete children)
-            db.session.delete(file)
-
-            # Update user storage
-            user.storage_used = max(0, user.storage_used - total_size)
-
+            FileService._soft_delete_recursive(file)
             db.session.commit()
-
-            return True, {'message': 'File deleted successfully'}, 200
+            return True, {'message': 'File moved to Recycle Bin'}, 200
 
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(f"File delete error: {str(e)}")
             return False, {'error': 'Delete failed', 'details': str(e)}, 500
+
+    @staticmethod
+    def _soft_delete_recursive(file):
+        """Mark a file/folder and all its descendants as deleted."""
+        now = datetime.utcnow()
+        file.is_deleted = True
+        file.deleted_at = now
+        file.original_parent_folder_uuid = file.parent_folder_uuid
+        file.parent_folder_uuid = None
+        if file.is_folder:
+            for child in File.query.filter_by(
+                    parent_folder_uuid=file.uuid, user_uuid=file.user_uuid,
+                    is_deleted=False).all():
+                child.is_deleted = True
+                child.deleted_at = now
+                child.original_parent_folder_uuid = child.parent_folder_uuid
+                if child.is_folder:
+                    FileService._soft_delete_children(child, now)
+
+    @staticmethod
+    def _soft_delete_children(folder, now):
+        """Recursively mark children as deleted."""
+        for child in File.query.filter_by(
+                parent_folder_uuid=folder.uuid, user_uuid=folder.user_uuid,
+                is_deleted=False).all():
+            child.is_deleted = True
+            child.deleted_at = now
+            child.original_parent_folder_uuid = child.parent_folder_uuid
+            if child.is_folder:
+                FileService._soft_delete_children(child, now)
+
+    @staticmethod
+    def permanently_delete(user, file_uuid):
+        """Permanently delete a file from storage and database."""
+        file = File.query.filter_by(uuid=file_uuid, user_uuid=user.uuid).first()
+        if not file:
+            return False, {'error': 'File not found'}, 404
+        try:
+            total_size = FileService._calculate_size_recursive(file)
+            StorageService.delete_file(user.uuid, file.file_path)
+            db.session.delete(file)
+            user.storage_used = max(0, user.storage_used - total_size)
+            db.session.commit()
+            return True, {'message': 'File permanently deleted'}, 200
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Permanent delete error: {str(e)}")
+            return False, {'error': 'Delete failed', 'details': str(e)}, 500
+
+    @staticmethod
+    def get_trash(user, page=1, per_page=50):
+        """Get files in the Recycle Bin (top-level deleted items only)."""
+        try:
+            query = File.query.filter_by(
+                user_uuid=user.uuid, is_deleted=True
+            ).filter(
+                File.parent_folder_uuid.is_(None)
+            ).order_by(File.deleted_at.desc())
+
+            pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+            files = []
+            for file in pagination.items:
+                file_data = {
+                    **file.to_dict(),
+                    'icon': get_file_icon(file.mime_type, file.is_folder)
+                }
+                if file.is_folder:
+                    file_data['item_count'] = file.children.count()
+                files.append(file_data)
+
+            return True, {
+                'files': files,
+                'pagination': {
+                    'page': pagination.page,
+                    'per_page': pagination.per_page,
+                    'total': pagination.total,
+                    'pages': pagination.pages
+                }
+            }, 200
+        except Exception as e:
+            current_app.logger.error(f"Get trash error: {str(e)}")
+            return False, {'error': 'Failed to retrieve trash', 'details': str(e)}, 500
+
+    @staticmethod
+    def restore_file(user, file_uuid):
+        """Restore a file from the Recycle Bin."""
+        file = File.query.filter_by(uuid=file_uuid, user_uuid=user.uuid, is_deleted=True).first()
+        if not file:
+            return False, {'error': 'File not found in Recycle Bin'}, 404
+        try:
+            FileService._restore_recursive(file)
+            db.session.commit()
+            return True, {'message': 'File restored successfully'}, 200
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"File restore error: {str(e)}")
+            return False, {'error': 'Restore failed', 'details': str(e)}, 500
+
+    @staticmethod
+    def _restore_recursive(file):
+        """Restore a file/folder and its deleted descendants."""
+        if file.original_parent_folder_uuid:
+            parent_exists = File.query.filter_by(
+                uuid=file.original_parent_folder_uuid,
+                user_uuid=file.user_uuid,
+                is_deleted=False
+            ).first()
+            file.parent_folder_uuid = file.original_parent_folder_uuid if parent_exists else None
+        else:
+            file.parent_folder_uuid = None
+        file.is_deleted = False
+        file.deleted_at = None
+        file.original_parent_folder_uuid = None
+        if file.is_folder:
+            children = File.query.filter_by(
+                original_parent_folder_uuid=file.uuid,
+                user_uuid=file.user_uuid,
+                is_deleted=True
+            ).all()
+            for child in children:
+                child.parent_folder_uuid = file.uuid
+                child.is_deleted = False
+                child.deleted_at = None
+                child.original_parent_folder_uuid = None
+                if child.is_folder:
+                    FileService._restore_recursive(child)
+
+    @staticmethod
+    def empty_trash(user):
+        """Permanently delete all files in the Recycle Bin."""
+        try:
+            deleted_files = File.query.filter_by(
+                user_uuid=user.uuid, is_deleted=True
+            ).all()
+            total_size = 0
+            for file in deleted_files:
+                if not file.is_folder:
+                    total_size += file.file_size or 0
+                StorageService.delete_file(user.uuid, file.file_path)
+                db.session.delete(file)
+            user.storage_used = max(0, user.storage_used - total_size)
+            db.session.commit()
+            return True, {'message': 'Recycle Bin emptied'}, 200
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Empty trash error: {str(e)}")
+            return False, {'error': 'Failed to empty Recycle Bin', 'details': str(e)}, 500
+
+    @staticmethod
+    def cleanup_old_trash(days=30):
+        """Permanently delete files in bin for more than `days` days."""
+        cutoff = datetime.utcnow() - timedelta(days=days)
+        old_files = File.query.filter(
+            File.is_deleted == True,
+            File.deleted_at <= cutoff
+        ).all()
+        users_affected = {}
+        for file in old_files:
+            if not file.is_folder:
+                users_affected.setdefault(file.user_uuid, 0)
+                users_affected[file.user_uuid] += file.file_size or 0
+            StorageService.delete_file(file.user_uuid, file.file_path)
+            db.session.delete(file)
+        for user_uuid, size in users_affected.items():
+            user = User.query.get(user_uuid)
+            if user:
+                user.storage_used = max(0, user.storage_used - size)
+        db.session.commit()
+        return len(old_files)
 
     @staticmethod
     def create_folder(user, folder_name, parent_folder_uuid=None):

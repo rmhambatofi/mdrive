@@ -135,3 +135,42 @@ class AuthController:
 
         except Exception as e:
             return jsonify({'error': 'Failed to update profile', 'details': str(e)}), 500
+
+    @staticmethod
+    @jwt_required_custom
+    def change_password(user):
+        """
+        Change the authenticated user's password.
+
+        Requires: JWT token in Authorization header
+        Expected JSON body:
+            {
+                "current_password": "OldPass123",
+                "new_password": "NewPass456"
+            }
+
+        Returns:
+            JSON response with success message
+        """
+        try:
+            data = request.get_json()
+
+            if not data:
+                return jsonify({'error': 'No data provided'}), 400
+
+            current_password = data.get('current_password')
+            new_password = data.get('new_password')
+
+            if not current_password or not new_password:
+                return jsonify({'error': 'current_password and new_password are required'}), 400
+
+            success, response_data, status_code = AuthService.change_password(
+                user_uuid=user.uuid,
+                current_password=current_password,
+                new_password=new_password,
+            )
+
+            return jsonify(response_data), status_code
+
+        except Exception as e:
+            return jsonify({'error': 'Failed to change password', 'details': str(e)}), 500

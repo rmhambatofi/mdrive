@@ -91,3 +91,19 @@ def create_admin_command():
         db.session.rollback()
         click.echo(click.style(f'Error: {str(e)}', fg='red', bold=True))
         raise SystemExit(1)
+
+
+@click.command('cleanup-trash')
+@click.option('--days', default=30, help='Delete items older than N days (default: 30)')
+@with_appcontext
+def cleanup_trash_command(days):
+    """Permanently delete files in Recycle Bin older than N days. Usage: flask cleanup-trash"""
+    from app.services.file_service import FileService
+
+    click.echo(f'Cleaning up trash items older than {days} days...')
+    try:
+        count = FileService.cleanup_old_trash(days=days)
+        click.echo(click.style(f'Done — {count} item(s) permanently deleted.', fg='green'))
+    except Exception as e:
+        click.echo(click.style(f'Error: {str(e)}', fg='red', bold=True))
+        raise SystemExit(1)

@@ -13,6 +13,8 @@ import Register from './components/Auth/Register';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminSettings from './pages/AdminSettings';
+import Profile from './pages/Profile';
+import RecycleBin from './pages/RecycleBin';
 
 function App() {
   return (
@@ -45,6 +47,22 @@ function App() {
               <AdminRoute>
                 <AdminSettings />
               </AdminRoute>
+            }
+          />
+          <Route
+            path="/trash"
+            element={
+              <PrivateRoute>
+                <RecycleBin />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <PrivateRoute>
+                <Profile />
+              </PrivateRoute>
             }
           />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />

@@ -20,6 +20,9 @@ class File(db.Model):
     file_size = db.Column(db.BigInteger, default=0)
     mime_type = db.Column(db.String(100))
     is_folder = db.Column(db.Boolean, default=False)
+    is_deleted = db.Column(db.Boolean, default=False, nullable=False)
+    deleted_at = db.Column(db.DateTime, nullable=True)
+    original_parent_folder_uuid = db.Column(db.String(36), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -76,6 +79,8 @@ class File(db.Model):
             'file_size': self.file_size,
             'mime_type': self.mime_type,
             'is_folder': self.is_folder,
+            'is_deleted': self.is_deleted,
+            'deleted_at': self.deleted_at.isoformat() if self.deleted_at else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }

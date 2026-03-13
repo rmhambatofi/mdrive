@@ -118,6 +118,28 @@ const fileService = {
     window.URL.revokeObjectURL(url);
   },
 
+  // ── Recycle Bin ─────────────────────────────────────────
+
+  getTrash: async () => {
+    const response = await api.get('/files/trash');
+    return response.data;
+  },
+
+  restoreFile: async (fileId) => {
+    const response = await api.post(`/files/${fileId}/restore`);
+    return response.data;
+  },
+
+  permanentlyDelete: async (fileId) => {
+    const response = await api.delete(`/files/${fileId}/permanent`);
+    return response.data;
+  },
+
+  emptyTrash: async () => {
+    const response = await api.delete('/files/trash');
+    return response.data;
+  },
+
   /**
    * Rename a file or folder
    */

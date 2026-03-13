@@ -5,7 +5,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { LogOut, User, Cloud, Menu, ShieldCheck } from 'lucide-react';
+import { LogOut, User, Cloud, Menu, ShieldCheck, UserCog } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ThemeToggle from '../Common/ThemeToggle';
 
@@ -20,15 +20,11 @@ const Navbar = ({ onMenuClick }) => {
   };
 
   const formatStorage = (bytes) => {
-    if (bytes < 1024) {
-      return `${bytes} B`;
-    } else if (bytes < 1024 * 1024) {
-      return `${(bytes / 1024).toFixed(2)} KB`;
-    } else if (bytes < 1024 * 1024 * 1024) {
-      return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-    } else {
-      return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-    }
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1000) return `${(bytes / 1024).toFixed(2)} KB`;
+    if (bytes < 1024 ** 2 * 1000) return `${(bytes / 1024 ** 2).toFixed(2)} MB`;
+    if (bytes < 1024 ** 3 * 1000) return `${(bytes / 1024 ** 3).toFixed(2)} GB`;
+    return `${(bytes / (1024 ** 3 * 1000)).toFixed(2)} TB`;
   };
 
   return (
@@ -110,6 +106,15 @@ const Navbar = ({ onMenuClick }) => {
                     <span>Administration</span>
                   </Link>
                 )}
+
+                <Link
+                  to="/profile"
+                  onClick={() => setShowUserMenu(false)}
+                  className="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 flex items-center space-x-2 transition"
+                >
+                  <UserCog className="w-4 h-4" />
+                  <span>My profile</span>
+                </Link>
 
                 <button
                   onClick={handleLogout}

@@ -122,8 +122,9 @@ def create_app(config_name=None):
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
 
     # Register CLI commands
-    from app.cli import create_admin_command
+    from app.cli import create_admin_command, cleanup_trash_command
     app.cli.add_command(create_admin_command)
+    app.cli.add_command(cleanup_trash_command)
 
     # Error handlers
     @app.errorhandler(404)

@@ -317,3 +317,54 @@ class FileController:
         except Exception as e:
             current_app.logger.error(f"Get file info endpoint error: {str(e)}")
             return jsonify({'error': 'Failed to retrieve file info', 'details': str(e)}), 500
+
+    # ── Recycle Bin endpoints ──────────────────────────────────
+
+    @staticmethod
+    @jwt_required_custom
+    def get_trash(user):
+        try:
+            page = request.args.get('page', 1, type=int)
+            per_page = request.args.get('per_page', 50, type=int)
+            if page < 1:
+                page = 1
+            if per_page < 1 or per_page > 100:
+                per_page = 50
+            success, response_data, status_code = FileService.get_trash(
+                user=user, page=page, per_page=per_page)
+            return jsonify(response_data), status_code
+        except Exception as e:
+            current_app.logger.error(f"Get trash endpoint error: {str(e)}")
+            return jsonify({'error': 'Failed to retrieve trash', 'details': str(e)}), 500
+
+    @staticmethod
+    @jwt_required_custom
+    def restore_file(user, file_uuid):
+        try:
+            success, response_data, status_code = FileService.restore_file(
+                user=user, file_uuid=file_uuid)
+            return jsonify(response_data), status_code
+        except Exception as e:
+            current_app.logger.error(f"Restore endpoint error: {str(e)}")
+            return jsonify({'error': 'Restore failed', 'details': str(e)}), 500
+
+    @staticmethod
+    @jwt_required_custom
+    def permanently_delete(user, file_uuid):
+        try:
+            success, response_data, status_code = FileService.permanently_delete(
+                user=user, file_uuid=file_uuid)
+            return jsonify(response_data), status_code
+        except Exception as e:
+            current_app.logger.error(f"Permanent delete endpoint error: {str(e)}")
+            return jsonify({'error': 'Delete failed', 'details': str(e)}), 500
+
+    @staticmethod
+    @jwt_required_custom
+    def empty_trash(user):
+        try:
+            success, response_data, status_code = FileService.empty_trash(user=user)
+            return jsonify(response_data), status_code
+        except Exception as e:
+            current_app.logger.error(f"Empty trash endpoint error: {str(e)}")
+            return jsonify({'error': 'Failed to empty trash', 'details': str(e)}), 500
